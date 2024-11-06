@@ -9,7 +9,6 @@ exec_prefix=$(prefix)
 bindir=$(exec_prefix)/bin
 libdir=$(exec_prefix)/lib
 datarootdir=$(prefix)/share
-LIB64_PATH=$(libdir)/libstrangle/lib64
 
 SOURCEDIR=src
 BUILDDIR=build
@@ -25,14 +24,14 @@ VK_SOURCES=\
 	$(wildcard $(SOURCEDIR)/vulkan/*.c) \
 	$(wildcard $(SOURCEDIR)/vulkan/*.cpp)
 
-.PHONY: all 64-bit native ld clean uninstall install install-64 install-ld install-common install-native
+.PHONY: all 64-bit native ld clean uninstall install
 
 all: 64-bit ld
 
 64-bit: \
-	$(BUILDDIR)/libstrangle64.so \
-	$(BUILDDIR)/libstrangle64_nodlsym.so \
-	$(BUILDDIR)/libstrangle_vk64.so
+	$(BUILDDIR)/libstrangle.so \
+	$(BUILDDIR)/libstrangle_nodlsym.so \
+	$(BUILDDIR)/libstrangle_vk.so
 
 native: \
 	$(BUILDDIR)/libstrangle_native.so \
@@ -45,15 +44,15 @@ $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
 
 $(BUILDDIR)/libstrangle.conf: | $(BUILDDIR)
-	@echo "$(LIB64_PATH)/" > $(BUILDDIR)/libstrangle.conf
+	@echo "$(libdir)/libstrangle" > $(BUILDDIR)/libstrangle.conf
 
-$(BUILDDIR)/libstrangle64.so: | $(BUILDDIR)
+$(BUILDDIR)/libstrangle.so: | $(BUILDDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -m64 -o $@ $(GL_SOURCES) $(LDLIBS) -DHOOK_DLSYM
 
-$(BUILDDIR)/libstrangle64_nodlsym.so: | $(BUILDDIR)
+$(BUILDDIR)/libstrangle_nodlsym.so: | $(BUILDDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -m64 -o $@ $(GL_SOURCES) $(LDLIBS)
 
-$(BUILDDIR)/libstrangle_vk64.so: | $(BUILDDIR)
+$(BUILDDIR)/libstrangle_vk.so: | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $(LDXXFLAGS) -m64 -o $@ $(VK_SOURCES) $(LDXXLIBS)
 
 $(BUILDDIR)/libstrangle_native.so: | $(BUILDDIR)
@@ -74,36 +73,36 @@ install-ld: ld
 	install -m 0644 -D -T $(BUILDDIR)/libstrangle.conf $(DESTDIR)/etc/ld.so.conf.d/libstrangle.conf
 	if [ -z "$(DESTDIR)" ]; then ldconfig; fi
 
+install: \
+	all \
+	install-common \
+	install-ld \
+	install-64
+
 install-64: 64-bit
-	install -m 0755 -D -T $(BUILDDIR)/libstrangle64.so $(DESTDIR)$(LIB64_PATH)/libstrangle.so
-	install -m 0755 -D -T $(BUILDDIR)/libstrangle64_nodlsym.so $(DESTDIR)$(LIB64_PATH)/libstrangle_nodlsym.so
-	install -m 0755 -D -T $(BUILDDIR)/libstrangle_vk64.so $(DESTDIR)$(LIB64_PATH)/libstrangle_vk.so
+	install -m 0755 -D -T $(BUILDDIR)/libstrangle.so $(DESTDIR)$(libdir)/libstrangle.so
+	install -m 0755 -D -T $(BUILDDIR)/libstrangle_nodlsym.so $(DESTDIR)$(libdir)/libstrangle_nodlsym.so
+	install -m 0755 -D -T $(BUILDDIR)/libstrangle_vk.so $(DESTDIR)$(libdir)/libstrangle_vk.so
 
 install-native: native
 	install -m 0755 -D -T $(BUILDDIR)/libstrangle_native.so $(DESTDIR)$(libdir)/libstrangle.so
 	install -m 0755 -D -T $(BUILDDIR)/libstrangle_native_nodlsym.so $(DESTDIR)$(libdir)/libstrangle_nodlsym.so
 	install -m 0755 -D -T $(BUILDDIR)/libstrangle_vk_native.so $(DESTDIR)$(libdir)/libstrangle_vk.so
 
-install: \
-	all \
-	install-common \
-	install-64 \
-	install-ld
-
 clean:
-	rm -f $(BUILDDIR)/libstrangle64.so
+	rm -f $(BUILDDIR)/libstrangle.so
 	rm -f $(BUILDDIR)/libstrangle_native.so
-	rm -f $(BUILDDIR)/libstrangle64_nodlsym.so
+	rm -f $(BUILDDIR)/libstrangle_nodlsym.so
 	rm -f $(BUILDDIR)/libstrangle_native_nodlsym.so
-	rm -f $(BUILDDIR)/libstrangle_vk64.so
+	rm -f $(BUILDDIR)/libstrangle_vk.so
 	rm -f $(BUILDDIR)/libstrangle_vk_native.so
 	rm -f $(BUILDDIR)/libstrangle.conf
 
 uninstall:
 	rm -f $(DESTDIR)/etc/ld.so.conf.d/libstrangle.conf
-	rm -f $(DESTDIR)$(LIB64_PATH)/libstrangle.so
-	rm -f $(DESTDIR)$(LIB64_PATH)/libstrangle_nodlsym.so
-	rm -f $(DESTDIR)$(LIB64_PATH)/libstrangle_vk.so
+	rm -f $(DESTDIR)$(libdir)/libstrangle.so
+	rm -f $(DESTDIR)$(libdir)/libstrangle_nodlsym.so
+	rm -f $(DESTDIR)$(libdir)/libstrangle_vk.so
 	rm -f $(DESTDIR)$(datarootdir)/vulkan/implicit_layer.d/libstrangle_vk.json
 	rm -f $(DESTDIR)$(bindir)/strangle
 	rm -f $(DESTDIR)$(bindir)/stranglevk
